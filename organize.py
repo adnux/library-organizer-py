@@ -30,20 +30,11 @@ from datetime import date
 from pathlib import Path
 
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
 DEFAULT_STRUCTURE = "Year|Genre|Artist|Month"
 VALID_TOKENS      = {"year", "month", "genre", "artist"}
 
 
 def _load_env_root() -> Path:
-    """
-    Resolve the default root folder:
-      1. MUSIC_ROOT in a .env file next to the script, or in CWD
-      2. Current working directory if no .env / no MUSIC_ROOT key
-    """
     for env_path in (Path(__file__).parent / ".env", Path.cwd() / ".env"):
         if env_path.is_file():
             for line in env_path.read_text().splitlines():
@@ -89,12 +80,7 @@ GENRE_PATTERNS = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Metadata helpers
-# ---------------------------------------------------------------------------
-
 def get_tags(filepath: Path) -> dict:
-    """Return lowercased tag dict from ffprobe, or {} on failure."""
     try:
         result = subprocess.run(
             ["ffprobe", "-v", "quiet", "-print_format", "json",
@@ -108,7 +94,6 @@ def get_tags(filepath: Path) -> dict:
 
 
 def normalize_genre(raw: str | None) -> str | None:
-    """Pick the most specific known genre from a raw (possibly compound) tag."""
     if not raw:
         return None
     segments = re.split(r"[;:,]", raw)
@@ -141,7 +126,6 @@ def week_to_month(year: int, week: int) -> int | None:
 
 
 def parse_date_tag(tags: dict) -> tuple[int | None, int | None]:
-    """Return (year, month) from embedded tags."""
     for key in ("tdor", "trda", "date", "year"):
         val = tags.get(key, "")
         m = re.search(r"(\d{4})(?:-(\d{2}))?", val)
@@ -153,13 +137,8 @@ def parse_date_tag(tags: dict) -> tuple[int | None, int | None]:
 
 
 def parse_folder_name(name: str) -> tuple:
-    """
-    Infer (year, month, genre, artist) from a folder name.
-    Returns None for each field that cannot be determined.
-    """
     year, month, genre, artist = None, None, None, None
 
-    # ISO week: "Singles week 28 2025" / "Singles WK05 2026" / "Week 06"
     wk = re.search(r"\bw(?:ee)?k\s*0*(\d{1,2})\b", name, re.I)
     if wk:
         yr_m = re.search(r"\b(20\d{2})\b", name)
@@ -167,14 +146,12 @@ def parse_folder_name(name: str) -> tuple:
             year = int(yr_m.group(1))
             month = week_to_month(year, int(wk.group(1)))
 
-    # Explicit YYYY-MM
     if not month:
         dm = re.search(r"(20\d{2})[-.](\d{2})", name)
         if dm:
             year = int(dm.group(1))
             month = int(dm.group(2))
 
-    # Month name
     if not month:
         for mn, mv in sorted(MONTH_NAMES.items(), key=lambda x: -len(x[0])):
             if re.search(r"\b" + mn + r"\b", name, re.I):
@@ -184,7 +161,6 @@ def parse_folder_name(name: str) -> tuple:
                     year = int(ym.group(1))
                 break
 
-    # Year only — bracketed then bare
     if not year:
         for pat in [r"[\[\(](20\d{2}|19\d{2})[\]\)]", r"\b(20\d{2}|19\d{2})\b"]:
             ym = re.search(pat, name)
@@ -192,22 +168,18 @@ def parse_folder_name(name: str) -> tuple:
                 year = int(ym.group(1))
                 break
 
-    # Genre
     for pat, norm in GENRE_PATTERNS:
         if re.search(pat, name, re.I):
             genre = norm
             break
 
-    # Artist from "[YYYY] Artist - Album"
     a = re.match(r"^\[\d{4}\]\s*(.+?)\s*-\s*.+", name)
     if a:
         artist = a.group(1).strip()
-    # "Artist - YYYY - Album"
     if not artist:
         a = re.match(r"^(.+?)\s*-\s*20\d{2}\s*-\s*.+", name)
         if a and not re.search(r"^(VA|Various)", a.group(1), re.I):
             artist = a.group(1).strip()
-    # "YYYY - Artist - Album"
     if not artist:
         a = re.match(r"^20\d{2}\s*-\s*(.+?)\s*-\s*.+", name)
         if a and not re.search(
@@ -221,16 +193,7 @@ def parse_folder_name(name: str) -> tuple:
 
 
 
-# ---------------------------------------------------------------------------
-# Structure helpers
-# ---------------------------------------------------------------------------
-
 def parse_structure(structure_str: str) -> list[str]:
-    """
-    Parse and validate a pipe-separated structure string.
-    Returns a list of lowercase token names e.g. ['year', 'genre', 'artist', 'month'].
-    Raises ValueError for unknown tokens.
-    """
     tokens = [t.strip().lower() for t in structure_str.split("|") if t.strip()]
     invalid = [t for t in tokens if t not in VALID_TOKENS]
     if invalid:
@@ -242,24 +205,11 @@ def parse_structure(structure_str: str) -> list[str]:
 
 
 def build_target_path(root: Path, meta: dict, structure: list[str], filename: str) -> Path:
-    """
-    Build the target file path from resolved metadata and the requested structure.
-    `meta` must have keys: year, month, genre, artist.
-    """
     parts = [meta[token] for token in structure]
     return root.joinpath(*parts, filename)
 
 
-# ---------------------------------------------------------------------------
-# Core resolver
-# ---------------------------------------------------------------------------
-
 def resolve_metadata(filepath: Path) -> tuple[str, str, str, str]:
-    """
-    Return (year, month, genre, artist) for a music file.
-    Falls back to folder-name heuristics when tags are missing.
-    Unknown month → "00".  Unknown year/genre → "Unknown".
-    """
     tags = get_tags(filepath)
     year, month = parse_date_tag(tags)
     artist = normalize_artist(tags.get("album_artist") or tags.get("artist"))
@@ -286,10 +236,6 @@ def resolve_metadata(filepath: Path) -> tuple[str, str, str, str]:
     )
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
 def run(root: Path, execute: bool, structure: list[str]) -> None:
     label = "EXECUTE" if execute else "DRY-RUN"
     print(f"{'='*80}")
@@ -315,7 +261,6 @@ def run(root: Path, execute: bool, structure: list[str]) -> None:
             except Exception as e:
                 errors.append((str(fpath.relative_to(root)), str(e)))
 
-    # Print plan
     for src, tgt in moves:
         print(f"  {'MOVE' if execute else 'WOULD MOVE'}: "
               f"{src.relative_to(root)}\n"
@@ -324,7 +269,6 @@ def run(root: Path, execute: bool, structure: list[str]) -> None:
     print(f"\n{'─'*80}")
     print(f"  Total files to move: {len(moves)}")
 
-    # Dynamic stats: count each structural level
     for i, token in enumerate(structure):
         counts: Counter = Counter()
         for _, tgt in moves:
@@ -343,7 +287,6 @@ def run(root: Path, execute: bool, structure: list[str]) -> None:
         print("\n  Run with --execute to apply changes.")
         return
 
-    # Execute moves
     print("\n  Moving files...")
     moved = skipped = 0
     for src, tgt in moves:
@@ -357,15 +300,12 @@ def run(root: Path, execute: bool, structure: list[str]) -> None:
 
     print(f"\n  Done. Moved: {moved}  |  Skipped: {skipped}")
 
-    # Remove empty source dirs (skip dirs that are part of the organised tree)
     print("  Cleaning up empty source folders...")
     removed = 0
     for dirpath, _, _ in os.walk(root, topdown=False):
         rel = Path(dirpath).relative_to(root)
         if not rel.parts:
             continue
-        # Don't remove dirs that belong to the organised output
-        # (heuristic: top-level dirs that look like a valid first-token value)
         try:
             os.rmdir(dirpath)
             removed += 1
@@ -374,20 +314,12 @@ def run(root: Path, execute: bool, structure: list[str]) -> None:
     print(f"  Removed {removed} empty directories.")
 
 
-# ---------------------------------------------------------------------------
-# Fix Years
-# ---------------------------------------------------------------------------
-
 _RE_FOUR_DIGIT_YEAR = re.compile(r"^(19|20)\d{2}$")
 _RE_YEAR_PREFIX     = re.compile(r"^(19|20)\d{2}")
 _RE_FOLDER_YEAR     = re.compile(r"^(19|20)\d{2}$")
 
 
 def _recover_year(fpath: Path, root: Path, tags: dict) -> str:
-    """
-    Return the best available 4-digit year string for a file with a
-    bad/missing DATE tag.  Priority: tdor → trda → year-named folder.
-    """
     for key in ("tdor", "trda"):
         val = tags.get(key, "")
         if val and _RE_YEAR_PREFIX.match(val):
@@ -406,10 +338,6 @@ def _recover_year(fpath: Path, root: Path, tags: dict) -> str:
 
 
 def _rewrite_date_tag(fpath: Path, year: str) -> None:
-    """
-    Overwrite the DATE tag to `year` using ffmpeg (no re-encoding).
-    Writes to a temp file then atomically replaces the original.
-    """
     suffix = fpath.suffix
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=suffix, dir=fpath.parent)
     os.close(tmp_fd)
@@ -502,7 +430,6 @@ def fix_years(root: Path, execute: bool) -> None:
         print("\n  Run with --fixYears --execute to apply changes.")
         return
 
-    # Execute
     print("\n  Rewriting tags...")
     fixed = errors = 0
     for iss in issues:
@@ -519,7 +446,6 @@ def fix_years(root: Path, execute: bool) -> None:
 
 
 def flatten(root: Path, execute: bool) -> None:
-    """Move all music files directly into root, removing the folder hierarchy."""
     label = "EXECUTE" if execute else "DRY-RUN"
     print(f"{'='*80}")
     print(f"  Music Organizer — FLATTEN ({label})")
