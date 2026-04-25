@@ -246,7 +246,6 @@ def run(root: Path, execute: bool, structure: list[str]) -> None:
 
     moves: list[tuple[Path, Path]] = []
     errors: list[tuple[str, str]] = []
-
     for dirpath, _, files in os.walk(root):
         for fname in sorted(files):
             fpath = Path(dirpath) / fname
@@ -370,7 +369,6 @@ def fix_years(root: Path, execute: bool) -> None:
     print(f"  Root: {root}")
     print(f"{'='*80}\n")
 
-    # Collect issues
     issues: list[dict] = []
     for fpath in sorted(root.rglob("*")):
         if not fpath.is_file() or fpath.suffix.lower() not in MUSIC_EXTS:
@@ -410,7 +408,6 @@ def fix_years(root: Path, execute: bool) -> None:
         print("  All DATE tags are already in YYYY format. Nothing to do.")
         return
 
-    # Print plan grouped by reason
     by_reason: dict[str, list] = defaultdict(list)
     for iss in issues:
         by_reason[iss["reason"]].append(iss)
