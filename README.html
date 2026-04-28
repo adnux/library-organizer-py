@@ -201,11 +201,48 @@
       <li><code>ffprobe</code> + <code>ffmpeg</code> — used to read/write embedded audio tags</li>
     </ul>
 
-    <div class="platform-group" style="margin-top:1rem">
+    <h3>Install Python</h3>
+
+    <div class="platform-group">
+      <span class="platform-label">macOS</span>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre>brew install python@3.12</pre>
+      </div>
+    </div>
+
+    <div class="platform-group">
+      <span class="platform-label">Linux (Debian / Ubuntu)</span>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre>sudo apt update &amp;&amp; sudo apt install -y python3 python3-pip</pre>
+      </div>
+    </div>
+
+    <div class="platform-group">
+      <span class="platform-label">Windows</span>
+      <div class="code-block">
+        <div class="code-block-header">powershell</div>
+        <pre>winget install Python.Python.3
+<span class="comment"># or download from: https://www.python.org/downloads/</span></pre>
+      </div>
+    </div>
+
+    <h3>Install ffmpeg (includes ffprobe)</h3>
+
+    <div class="platform-group">
       <span class="platform-label">macOS</span>
       <div class="code-block">
         <div class="code-block-header">bash</div>
         <pre>brew install ffmpeg</pre>
+      </div>
+    </div>
+
+    <div class="platform-group">
+      <span class="platform-label">Linux (Debian / Ubuntu)</span>
+      <div class="code-block">
+        <div class="code-block-header">bash</div>
+        <pre>sudo apt update &amp;&amp; sudo apt install -y ffmpeg</pre>
       </div>
     </div>
 

@@ -7,9 +7,34 @@ Reorganizes a music folder into a configurable hierarchical structure based on e
 - Python 3.9+
 - `ffprobe` + `ffmpeg` — used to read/write embedded audio tags
 
+### Install Python
+
+**macOS**
+```bash
+brew install python@3.12
+```
+
+**Linux (Debian / Ubuntu)**
+```bash
+sudo apt update && sudo apt install -y python3 python3-pip
+```
+
+**Windows**
+```powershell
+winget install Python.Python.3
+# or download from: https://www.python.org/downloads/
+```
+
+### Install ffmpeg (includes ffprobe)
+
 **macOS**
 ```bash
 brew install ffmpeg
+```
+
+**Linux (Debian / Ubuntu)**
+```bash
+sudo apt update && sudo apt install -y ffmpeg
 ```
 
 **Windows**
