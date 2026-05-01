@@ -10,7 +10,7 @@ Usage:
     python3 organize.py --fixYears --execute                  # apply DATE tag fixes
     python3 organize.py --flatten                             # preview flattening to root
     python3 organize.py --flatten --execute                   # move all files to root
-    python3 organize.py --root /path/to/Electronic
+    python3 organize.py --only-root                            # only files in root (no subfolders)
 
 Valid --structure tokens (case-insensitive, pipe-separated): Year, Month, Genre, Artist
 Default structure: Year|Genre|Artist|Month
@@ -236,17 +236,27 @@ def resolve_metadata(filepath: Path) -> tuple[str, str, str, str]:
     )
 
 
-def run(root: Path, execute: bool, structure: list[str]) -> None:
+def run(root: Path, execute: bool, structure: list[str], only_root: bool = False) -> None:
     label = "EXECUTE" if execute else "DRY-RUN"
     print(f"{'='*80}")
     print(f"  Music Organizer — {label}")
     print(f"  Root:      {root}")
     print(f"  Structure: {' / '.join(t.capitalize() for t in structure)}")
+    if only_root:
+        print(f"  Scope:     root folder only (subfolders skipped)")
     print(f"{'='*80}\n")
 
     moves: list[tuple[Path, Path]] = []
     errors: list[tuple[str, str]] = []
-    for dirpath, _, files in os.walk(root):
+
+    if only_root:
+        file_iter = (
+            (root, [], sorted(f for f in os.listdir(root) if (root / f).is_file())),
+        )
+    else:
+        file_iter = os.walk(root)
+
+    for dirpath, _, files in file_iter:
         for fname in sorted(files):
             fpath = Path(dirpath) / fname
             if fpath.suffix.lower() not in MUSIC_EXTS:
@@ -519,6 +529,10 @@ COMMANDS
   organize (default)
     Moves files into <root>/<structure>/ based on metadata tags.
 
+  --only-root
+    Only reorganize files directly in <root> — subfolders are not touched.
+    Without this flag all files in all subfolders are processed (default).
+
   --fixYears
     Scans all files and rewrites malformed DATE tags (URLs, YYYY-MM-DD, etc.)
     to a clean 4-digit year (YYYY). Uses ffmpeg — no audio is re-encoded.
@@ -547,6 +561,12 @@ EXAMPLES
 
   python3 organize.py --execute
       Move files for real.
+
+  python3 organize.py --only-root
+      Dry-run, but only files directly in <root> (skip subfolders).
+
+  python3 organize.py --only-root --execute
+      Move only root-level files for real.
 
   python3 organize.py --structure "Genre|Year|Artist" --execute
       Reorganize as  <root>/Melodic House & Techno/2025/Massano/track.flac
@@ -596,6 +616,12 @@ Non-music files (.nfo, .sfv, .m3u, .jpg, .crdownload, etc.) are ignored.
         help=f"Pipe-separated folder structure (default: {DEFAULT_STRUCTURE})",
     )
     parser.add_argument(
+        "--only-root",
+        action="store_true",
+        dest="only_root",
+        help="Only reorganize files directly in root — subfolders are not touched.",
+    )
+    parser.add_argument(
         "--fixYears",
         action="store_true",
         help="Fix DATE tags to 4-digit year format instead of reorganizing files.",
@@ -616,4 +642,4 @@ Non-music files (.nfo, .sfv, .m3u, .jpg, .crdownload, etc.) are ignored.
             structure = parse_structure(args.structure)
         except ValueError as e:
             parser.error(str(e))
-        run(root=args.root, execute=args.execute, structure=structure)
+        run(root=args.root, execute=args.execute, structure=structure, only_root=args.only_root)

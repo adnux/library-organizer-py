@@ -21,6 +21,7 @@ from organize import (
     parse_structure,
     build_target_path,
     week_to_month,
+    run,
 )
 
 
@@ -276,6 +277,67 @@ class TestBuildTargetPath(unittest.TestCase):
         meta = {"year": "2026", "genre": "Techno", "artist": "Various Artists", "month": "03"}
         result = build_target_path(root, meta, ["year", "genre", "artist", "month"], "comp.flac")
         self.assertEqual(result, Path("/music/2026/Techno/Various Artists/03/comp.flac"))
+
+
+class TestRunOnlyRoot(unittest.TestCase):
+    """Integration test for run() with only_root=True."""
+
+    def setUp(self):
+        import tempfile
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def tearDown(self):
+        import shutil as _shutil
+        _shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _make_file(self, rel_path: str) -> Path:
+        p = self.tmp / rel_path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"\x00" * 4)
+        return p
+
+    def test_only_root_skips_subfolders(self):
+        root_file = self._make_file("root_track.flac")
+        sub_file  = self._make_file("subdir/sub_track.flac")
+
+        scanned = []
+        original_resolve = __import__("organize").resolve_metadata
+
+        import unittest.mock as mock
+
+        def fake_resolve(fp):
+            scanned.append(fp)
+            return ("2025", "04", "Techno", "Artist")
+
+        with mock.patch("organize.resolve_metadata", side_effect=fake_resolve):
+            run(root=self.tmp, execute=False,
+                structure=["year", "genre", "artist", "month"],
+                only_root=True)
+
+        scanned_names = [p.name for p in scanned]
+        self.assertIn("root_track.flac", scanned_names)
+        self.assertNotIn("sub_track.flac", scanned_names)
+
+    def test_full_walk_includes_subfolders(self):
+        self._make_file("root_track.flac")
+        self._make_file("subdir/sub_track.flac")
+
+        scanned = []
+
+        import unittest.mock as mock
+
+        def fake_resolve(fp):
+            scanned.append(fp)
+            return ("2025", "04", "Techno", "Artist")
+
+        with mock.patch("organize.resolve_metadata", side_effect=fake_resolve):
+            run(root=self.tmp, execute=False,
+                structure=["year", "genre", "artist", "month"],
+                only_root=False)
+
+        scanned_names = [p.name for p in scanned]
+        self.assertIn("root_track.flac", scanned_names)
+        self.assertIn("sub_track.flac", scanned_names)
 
 
 if __name__ == "__main__":

@@ -84,6 +84,10 @@ python3 organize.py --root /Volumes/MyDrive/Electronic --execute
 python3 organize.py --structure "Genre|Year|Artist"
 python3 organize.py --structure "Artist|Year" --execute
 
+# Only reorganize files directly in root (skip subfolders)
+python3 organize.py --only-root
+python3 organize.py --only-root --execute
+
 # Fix malformed DATE tags (normalize to 4-digit year)
 python3 organize.py --fixYears            # preview
 python3 organize.py --fixYears --execute  # apply
@@ -104,6 +108,10 @@ python organize.py --execute
 # Custom root folder
 python organize.py --root "D:\Music\Electronic" --execute
 
+# Only reorganize files in root (skip subfolders)
+python organize.py --only-root
+python organize.py --only-root --execute
+
 # Custom folder structure
 python organize.py --structure "Genre|Year|Artist"
 
@@ -123,6 +131,7 @@ python organize.py --flatten --execute
 | `--root PATH` | `.env` `MUSIC_ROOT` or CWD | Root folder to operate on |
 | `--execute` | dry-run | Apply changes (without this flag nothing is written) |
 | `--structure TOKENS` | `Year\|Genre\|Artist\|Month` | Pipe-separated folder hierarchy |
+| `--only-root` | — | Only process files directly in root; skip subdirectories |
 | `--fixYears` | — | Normalize DATE tags to 4-digit year instead of reorganizing |
 | `--flatten` | — | Move all music files to root, removing all subfolders |
 

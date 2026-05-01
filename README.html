@@ -309,6 +309,10 @@ python3 organize.py <span class="flag">--root</span> <span class="path">/Volumes
 python3 organize.py <span class="flag">--structure</span> "Genre|Year|Artist"
 python3 organize.py <span class="flag">--structure</span> "Artist|Year" <span class="flag">--execute</span>
 
+<span class="comment"># Only reorganize files directly in root (skip subfolders)</span>
+python3 organize.py <span class="flag">--only-root</span>
+python3 organize.py <span class="flag">--only-root</span> <span class="flag">--execute</span>
+
 <span class="comment"># Fix malformed DATE tags (normalize to 4-digit year)</span>
 python3 organize.py <span class="flag">--fixYears</span>            <span class="comment"># preview</span>
 python3 organize.py <span class="flag">--fixYears</span> <span class="flag">--execute</span>  <span class="comment"># apply</span>
@@ -331,6 +335,10 @@ python organize.py <span class="flag">--execute</span>
 
 <span class="comment"># Custom root folder</span>
 python organize.py <span class="flag">--root</span> <span class="path">"D:\Music\Electronic"</span> <span class="flag">--execute</span>
+
+<span class="comment"># Only reorganize files in root (skip subfolders)</span>
+python organize.py <span class="flag">--only-root</span>
+python organize.py <span class="flag">--only-root</span> <span class="flag">--execute</span>
 
 <span class="comment"># Custom folder structure</span>
 python organize.py <span class="flag">--structure</span> "Genre|Year|Artist"
@@ -358,6 +366,7 @@ python organize.py <span class="flag">--flatten</span> <span class="flag">--exec
           <tr><td><code>--root PATH</code></td><td><code>.env</code> <code>MUSIC_ROOT</code> or CWD</td><td>Root folder to operate on</td></tr>
           <tr><td><code>--execute</code></td><td>dry-run</td><td>Apply changes (without this flag nothing is written)</td></tr>
           <tr><td><code>--structure TOKENS</code></td><td><code>Year|Genre|Artist|Month</code></td><td>Pipe-separated folder hierarchy</td></tr>
+          <tr><td><code>--only-root</code></td><td>—</td><td>Only process files directly in root; skip subdirectories</td></tr>
           <tr><td><code>--fixYears</code></td><td>—</td><td>Normalize DATE tags to 4-digit year instead of reorganizing</td></tr>
           <tr><td><code>--flatten</code></td><td>—</td><td>Move all music files to root, removing all subfolders</td></tr>
         </tbody>
